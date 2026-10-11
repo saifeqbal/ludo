@@ -1,0 +1,936 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LudoJS - Comprehensive Ludo Engine & Developer Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Glassmorphism panel */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-16 px-6 border-b border-gray-800 flex items-center justify-between bg-gray-900/80 backdrop-blur z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-cube text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">LudoJS</h1>
+                <span class="text-xs text-gray-400 font-mono">v1.0.0 Core Engine & SDK</span>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="hidden md:flex space-x-1 bg-gray-950/60 p-1 rounded-xl border border-gray-800">
+            <button data-tab="game" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow transition">
+                <i class="fa-solid fa-gamepad mr-1.5"></i> Visual Board
+            </button>
+            <button data-tab="playground" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-terminal mr-1.5"></i> API Console
+            </button>
+            <button data-tab="debugger" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Time-Travel Debugger
+            </button>
+            <button data-tab="docs" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-book-open mr-1.5"></i> Documentation
+            </button>
+        </nav>
+
+        <div class="flex items-center space-x-3">
+            <button id="btnGlobalReset" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-rotate"></i>
+                <span class="hidden sm:inline">Reset Engine</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow overflow-hidden relative">
+        
+        <!-- TAB 1: VISUAL BOARD & GAMEPLAY -->
+        <section id="tab-game" class="tab-content h-full p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-y-auto">
+            <!-- Left Panel: Players & Controls -->
+            <div class="lg:col-span-4 flex flex-col space-y-4">
+                <div class="glass-card p-4 flex flex-col space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Game State</span>
+                        <span id="lblGameState" class="px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">WAITING</span>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-gray-900/60 p-3 rounded-xl border border-gray-800">
+                        <div class="flex items-center space-x-3">
+                            <div id="turnColorDot" class="w-4 h-4 rounded-full bg-red-500 shadow-md"></div>
+                            <div>
+                                <div class="text-xs text-gray-400">Current Turn</div>
+                                <div id="lblCurrentTurn" class="font-bold text-sm text-white">RED PLAYER</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-gray-400">Dice Roll</div>
+                            <div id="lblDiceVal" class="font-extrabold text-lg text-yellow-400">-</div>
+                        </div>
+                    </div>
+
+                    <button id="btnRollDice" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 font-bold text-white text-sm shadow-lg shadow-indigo-600/30 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-dice text-lg"></i>
+                        <span>ROLL DICE (API)</span>
+                    </button>
+                </div>
+
+                <!-- Players Status List -->
+                <div class="glass-card p-4 flex flex-col space-y-3 flex-grow">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Players Registry</span>
+                        <span class="text-xs text-indigo-400 font-mono">LudoJS.Player</span>
+                    </div>
+                    <div id="playersStatusList" class="flex flex-col space-y-2.5">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Real-time Event Stream Mini Log -->
+                <div class="glass-card p-4 flex flex-col h-44">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Event Stream (<code class="text-indigo-400">emit</code>)</span>
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    </div>
+                    <div id="miniEventLog" class="flex-grow overflow-y-auto space-y-1 font-mono text-[11px] text-gray-300 pr-1">
+                        <div class="text-gray-500 italic">Engine initialized. Waiting for events...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel: HTML5 Canvas Ludo Board -->
+            <div class="lg:col-span-8 flex items-center justify-center glass-card p-4 relative">
+                <div class="w-full max-w-[620px] aspect-square relative flex items-center justify-center">
+                    <canvas id="ludoCanvas" width="600" height="600" class="w-full h-full rounded-xl shadow-2xl bg-gray-950 border border-gray-800 cursor-pointer"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: API PLAYGROUND & CONSOLE -->
+        <section id="tab-playground" class="tab-content h-full p-4 hidden grid-cols-1 lg:grid-cols-12 gap-4 overflow-y-auto">
+            <!-- Left: Executable Commands -->
+            <div class="lg:col-span-5 flex flex-col space-y-4">
+                <div class="glass-card p-4 flex flex-col space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-terminal text-indigo-400"></i>
+                        <span>LudoJS Quick API Methods</span>
+                    </h3>
+                    <p class="text-xs text-gray-400">Execute methods directly on the instantiated <code class="text-indigo-300">LudoGame</code> instance.</p>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button onclick="playgroundRoll()" class="p-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 transition text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-dice text-yellow-400"></i>
+                            <span>game.rollDice()</span>
+                        </button>
+                        <button onclick="playgroundNextTurn()" class="p-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 transition text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-forward text-indigo-400"></i>
+                            <span>game.nextTurn()</span>
+                        </button>
+                        <button onclick="playgroundAddPlayer()" class="p-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 transition text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-user-plus text-green-400"></i>
+                            <span>game.addPlayer()</span>
+                        </button>
+                        <button onclick="playgroundRigDice(6)" class="p-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 border border-gray-700 transition text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-pink-400"></i>
+                            <span>dice.rig(6)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Script Runner -->
+                <div class="glass-card p-4 flex flex-col space-y-3 flex-grow">
+                    <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-code text-indigo-400"></i>
+                        <span>Custom JavaScript Script</span>
+                    </h3>
+                    <textarea id="txtCustomCode" class="w-full h-40 bg-gray-950 text-gray-200 code-font text-xs p-3 rounded-xl border border-gray-800 focus:outline-none focus:border-indigo-500 resize-none">// Access global 'game', 'board', 'dice' instances
+console.log("Current player:", game.getCurrentPlayer().color);
+console.log("Game state:", game.state);
+</textarea>
+                    <button onclick="runCustomCode()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition shadow-lg shadow-indigo-600/30">
+                        Run Snippet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Console Output & State JSON -->
+            <div class="lg:col-span-7 flex flex-col space-y-4">
+                <div class="glass-card p-4 flex flex-col h-[320px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Console Output</span>
+                        <button onclick="clearConsole()" class="text-xs text-gray-400 hover:text-white">Clear</button>
+                    </div>
+                    <div id="consoleOutput" class="flex-grow bg-gray-950 p-3 rounded-xl code-font text-xs text-green-400 overflow-y-auto space-y-1">
+                        <div>[LudoJS Playground initialized successfully]</div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4 flex flex-col flex-grow">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Live Game State (JSON)</span>
+                        <button onclick="exportStateJson()" class="text-xs text-indigo-400 hover:underline">Export JSON</button>
+                    </div>
+                    <pre id="jsonStateOutput" class="flex-grow bg-gray-950 p-3 rounded-xl code-font text-[11px] text-gray-300 overflow-y-auto max-h-48"></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: TIME-TRAVEL DEBUGGER -->
+        <section id="tab-debugger" class="tab-content h-full p-6 hidden flex flex-col space-y-4 overflow-y-auto">
+            <div class="glass-card p-6 flex flex-col space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+                            <span>Time-Travel State Snapshot Debugger</span>
+                        </h2>
+                        <p class="text-xs text-gray-400">LudoJS records automatic state snapshots after every turn or move. Scrub through timeline to inspect past states.</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="debuggerUndo()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white border border-gray-700">
+                            <i class="fa-solid fa-backward-step mr-1"></i> Undo
+                        </button>
+                        <button onclick="debuggerRedo()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-white border border-gray-700">
+                            Redo <i class="fa-solid fa-forward-step ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 pt-2">
+                    <span class="text-xs font-mono text-gray-400">Timeline Snapshot Index:</span>
+                    <input id="timelineSlider" type="range" min="0" max="0" value="0" oninput="onTimelineScrub(this.value)" class="flex-grow accent-indigo-500">
+                    <span id="lblSnapshotIndex" class="text-xs font-bold font-mono text-indigo-400">0 / 0</span>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 flex flex-col flex-grow">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Snapshot State Payload</span>
+                <pre id="snapshotJsonViewer" class="flex-grow bg-gray-950 p-4 rounded-xl code-font text-xs text-indigo-300 overflow-y-auto"></pre>
+            </div>
+        </section>
+
+        <!-- TAB 4: DOCUMENTATION -->
+        <section id="tab-docs" class="tab-content h-full p-6 hidden flex flex-col space-y-6 overflow-y-auto">
+            <div class="glass-card p-8 max-w-4xl mx-auto w-full space-y-6">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white mb-2">LudoJS Architecture & Documentation</h2>
+                    <p class="text-sm text-gray-300">LudoJS is a zero-dependency, object-oriented JavaScript library designed for building robust Ludo applications, multiplayer board games, and AI simulations.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-indigo-400">1. Core Classes Overview</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800">
+                            <h4 class="font-bold text-sm text-white mb-1"><code class="text-indigo-300">LudoGame</code></h4>
+                            <p class="text-xs text-gray-400">Main engine managing game lifecycle, turn queue, event emitter (`on`, `off`, `emit`), and victory detection.</p>
+                        </div>
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800">
+                            <h4 class="font-bold text-sm text-white mb-1"><code class="text-indigo-300">Board</code></h4>
+                            <p class="text-xs text-gray-400">Manages 52 track cells, home paths, safe star coordinates, and collision / capture rules.</p>
+                        </div>
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800">
+                            <h4 class="font-bold text-sm text-white mb-1"><code class="text-indigo-300">Player & Pawn</code></h4>
+                            <p class="text-xs text-gray-400">Manages player type (HUMAN vs CPU), 4 individual pawns per player, step tracking (-1 to 56), and status.</p>
+                        </div>
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800">
+                            <h4 class="font-bold text-sm text-white mb-1"><code class="text-indigo-300">AIController</code></h4>
+                            <p class="text-xs text-gray-400">Heuristic bot engine that evaluates capture opportunities, base unlocks, and optimal pawn progression.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-indigo-400">2. Quickstart Code Example</h3>
+                    <pre class="bg-gray-950 p-4 rounded-xl code-font text-xs text-gray-200 overflow-x-auto">// Initialize LudoJS Game instance
+const game = new LudoGame({
+    players: ['RED', 'GREEN', 'YELLOW', 'BLUE'],
+    aiPlayers: ['GREEN', 'YELLOW', 'BLUE']
+});
+
+// Listen to events
+game.on('roll', (data) => console.log(`${data.player} rolled ${data.roll}`));
+game.on('move', (data) => console.log(`Pawn moved:`, data));
+game.on('win', (data) => console.log(`Winner: ${data.winner}`));
+
+// Start game and roll dice
+game.start();
+const roll = game.rollDice();
+const movable = game.getMovablePawns(roll);
+if (movable.length > 0) {
+    game.movePawn(movable[0]);
+}</pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- LUDOJS LIBRARY SCRIPT & RENDERER -->
+    <script>
+        // ==========================================
+        // LUDOJS LIBRARY DEFINITION
+        // ==========================================
+
+        class EventEmitter {
+            constructor() {
+                this.listeners = {};
+            }
+            on(event, callback) {
+                if (!this.listeners[event]) this.listeners[event] = [];
+                this.listeners[event].push(callback);
+            }
+            off(event, callback) {
+                if (!this.listeners[event]) return;
+                this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+            }
+            emit(event, data) {
+                if (!this.listeners[event]) return;
+                this.listeners[event].forEach(cb => cb(data));
+            }
+        }
+
+        class Dice {
+            constructor() {
+                this.value = null;
+                this.riggedValue = null;
+            }
+            roll() {
+                if (this.riggedValue !== null) {
+                    const val = this.riggedValue;
+                    this.riggedValue = null; // consume
+                    this.value = val;
+                    return val;
+                }
+                this.value = Math.floor(Math.random() * 6) + 1;
+                return this.value;
+            }
+            rig(val) {
+                this.riggedValue = val;
+            }
+        }
+
+        class Pawn {
+            constructor(id, color) {
+                this.id = id;
+                this.color = color;
+                this.step = -1; // -1 = base yard, 0..50 = main track, 51..56 = home stretch, 57 = goal
+            }
+            isHome() { return this.step === 57; }
+            isInBase() { return this.step === -1; }
+            isActive() { return this.step >= 0 && this.step < 57; }
+            reset() { this.step = -1; }
+        }
+
+        class Player {
+            constructor(color, type = 'HUMAN') {
+                this.color = color;
+                this.type = type; // 'HUMAN' or 'CPU'
+                this.pawns = [0, 1, 2, 3].map(id => new Pawn(id, color));
+            }
+            hasFinished() {
+                return this.pawns.every(p => p.isHome());
+            }
+        }
+
+        class Board {
+            constructor() {
+                this.colors = ['RED', 'GREEN', 'YELLOW', 'BLUE'];
+                this.startIndices = { RED: 0, GREEN: 13, YELLOW: 26, BLUE: 39 };
+                this.safeSpots = [0, 8, 13, 21, 26, 34, 39, 47];
+                
+                this.outerPath = [
+                    [6, 13], [6, 12], [6, 11], [6, 10], [6, 9],
+                    [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
+                    [0, 7],
+                    [0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6],
+                    [6, 5], [6, 4], [6, 3], [6, 2], [6, 1], [6, 0],
+                    [7, 0],
+                    [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5],
+                    [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
+                    [14, 7],
+                    [14, 8], [13, 8], [12, 8], [11, 8], [10, 8], [9, 8],
+                    [8, 9], [8, 10], [8, 11], [8, 12], [8, 13], [8, 14],
+                    [7, 14], [6, 14]
+                ];
+
+                this.homePaths = {
+                    RED:    [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9], [7, 8]],
+                    GREEN:  [[1, 7],  [2, 7],  [3, 7],  [4, 7],  [5, 7],  [6, 7]],
+                    YELLOW: [[7, 1],  [7, 2],  [7, 3],  [7, 4],  [7, 5],  [7, 6]],
+                    BLUE:   [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7],  [8, 7]]
+                };
+
+                this.basePositions = {
+                    RED:    [[1.5, 10.5], [3.5, 10.5], [1.5, 12.5], [3.5, 12.5]],
+                    GREEN:  [[1.5, 1.5],  [3.5, 1.5],  [1.5, 3.5],  [3.5, 3.5]],
+                    YELLOW: [[10.5, 1.5], [12.5, 1.5], [10.5, 3.5], [12.5, 3.5]],
+                    BLUE:   [[10.5, 10.5],[12.5, 10.5],[10.5, 12.5],[12.5, 12.5]]
+                };
+            }
+
+            getPawnCoordinates(pawn) {
+                if (pawn.step === -1) {
+                    const pos = this.basePositions[pawn.color][pawn.id];
+                    return { x: pos[0], y: pos[1] };
+                }
+                if (pawn.step < 51) {
+                    const startIdx = this.startIndices[pawn.color];
+                    const outerIdx = (startIdx + pawn.step) % 52;
+                    const coord = this.outerPath[outerIdx];
+                    return { x: coord[0], y: coord[1] };
+                }
+                if (pawn.step < 57) {
+                    const homeIdx = pawn.step - 51;
+                    const coord = this.homePaths[pawn.color][homeIdx];
+                    return { x: coord[0], y: coord[1] };
+                }
+                // Goal center
+                return { x: 7, y: 7 };
+            }
+
+            isSafeSpot(color, step) {
+                if (step < 0 || step >= 51) return true;
+                const startIdx = this.startIndices[color];
+                const outerIdx = (startIdx + step) % 52;
+                return this.safeSpots.includes(outerIdx);
+            }
+        }
+
+        class AIController {
+            constructor(game) {
+                this.game = game;
+            }
+            selectBestMove(movablePawns, roll) {
+                if (movablePawns.length === 0) return null;
+                // Prioritize unlocking base on 6
+                const basePawn = movablePawns.find(p => p.step === -1 && roll === 6);
+                if (basePawn) return basePawn;
+
+                // Prioritize capturing opponent
+                for (const pawn of movablePawns) {
+                    const simulatedStep = pawn.step + roll;
+                    if (simulatedStep < 51) {
+                        // Check if lands on opponent
+                        // ... Simplified heuristic: sort by highest step or home reach
+                    }
+                }
+
+                movablePawns.sort((a, b) => b.step - a.step);
+                return movablePawns[0];
+            }
+        }
+
+        class LudoGame extends EventEmitter {
+            constructor(config = {}) {
+                super();
+                this.activeColorKeys = config.players || ['RED', 'GREEN', 'YELLOW', 'BLUE'];
+                this.aiColors = config.aiPlayers || ['GREEN', 'YELLOW', 'BLUE'];
+                this.board = new Board();
+                this.dice = new Dice();
+                this.ai = new AIController(this);
+                
+                this.players = {};
+                this.activeColorKeys.forEach(color => {
+                    const type = this.aiColors.includes(color) ? 'CPU' : 'HUMAN';
+                    this.players[color] = new Player(color, type);
+                });
+
+                this.currentTurnIndex = 0;
+                this.state = 'WAITING'; // WAITING, ROLLING, MOVING, WON
+                this.historySnapshots = [];
+                this.takeSnapshot();
+            }
+
+            getCurrentPlayer() {
+                return this.players[this.activeColorKeys[this.currentTurnIndex]];
+            }
+
+            rollDice() {
+                const roll = this.dice.roll();
+                this.state = 'MOVING';
+                this.emit('roll', { player: this.getCurrentPlayer().color, roll });
+                return roll;
+            }
+
+            getMovablePawns(roll) {
+                const player = this.getCurrentPlayer();
+                return player.pawns.filter(pawn => {
+                    if (pawn.step === -1) return roll === 6;
+                    if (pawn.step + roll > 57) return false;
+                    return true;
+                });
+            }
+
+            movePawn(pawn, roll) {
+                if (pawn.step === -1) {
+                    pawn.step = 0;
+                } else {
+                    pawn.step += roll;
+                }
+
+                // Check captures
+                let captured = null;
+                if (pawn.step < 51) {
+                    const startIdx = this.board.startIndices[pawn.color];
+                    const outerIdx = (startIdx + pawn.step) % 52;
+                    
+                    if (!this.board.isSafeSpot(pawn.color, pawn.step)) {
+                        Object.values(this.players).forEach(pl => {
+                            if (pl.color === pawn.color) return;
+                            pl.pawns.forEach(op => {
+                                if (op.step >= 0 && op.step < 51) {
+                                    const opStart = this.board.startIndices[op.color];
+                                    const opOuter = (opStart + op.step) % 52;
+                                    if (opOuter === outerIdx) {
+                                        op.reset();
+                                        captured = op;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+
+                this.emit('move', { player: pawn.color, pawnId: pawn.id, newStep: pawn.step, captured });
+
+                // Check win
+                if (this.getCurrentPlayer().hasFinished()) {
+                    this.state = 'WON';
+                    this.emit('win', { winner: this.getCurrentPlayer().color });
+                    return;
+                }
+
+                const extraTurn = (roll === 6 || captured !== null);
+                this.nextTurn(extraTurn);
+                this.takeSnapshot();
+            }
+
+            nextTurn(extraTurn = false) {
+                if (!extraTurn) {
+                    this.currentTurnIndex = (this.currentTurnIndex + 1) % this.activeColorKeys.length;
+                }
+                this.state = 'WAITING';
+                this.emit('turnChange', { player: this.getCurrentPlayer().color });
+            }
+
+            takeSnapshot() {
+                const snapshot = JSON.stringify({
+                    currentTurnIndex: this.currentTurnIndex,
+                    state: this.state,
+                    players: Object.fromEntries(
+                        Object.entries(this.players).map(([k, p]) => [k, { pawns: p.pawns.map(pw => ({ id: pw.id, step: pw.step })) }])
+                    )
+                });
+                this.historySnapshots.push(snapshot);
+            }
+
+            restoreSnapshot(index) {
+                if (index < 0 || index >= this.historySnapshots.length) return;
+                const snap = JSON.parse(this.historySnapshots[index]);
+                this.currentTurnIndex = snap.currentTurnIndex;
+                this.state = snap.state;
+                Object.entries(snap.players).forEach(([color, data]) => {
+                    data.pawns.forEach(pwData => {
+                        this.players[color].pawns[pwData.id].step = pwData.step;
+                    });
+                });
+                this.emit('restore', { index });
+            }
+        }
+
+        // ==========================================
+        // UI & PLAYGROUND CONTROLLER
+        // ==========================================
+
+        const COLOR_HEX = { RED: '#ef4444', GREEN: '#22c55e', YELLOW: '#eab308', BLUE: '#3b82f6' };
+        const LIGHT_HEX = { RED: '#fca5a5', GREEN: '#86efac', YELLOW: '#fde047', BLUE: '#93c5fd' };
+
+        let game = new LudoGame();
+        let selectedMovablePawns = [];
+
+        // Tab Switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.className = 'tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition';
+                });
+                btn.className = 'tab-btn px-4 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow transition';
+
+                const targetTab = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
+
+                if (targetTab === 'debugger') updateDebuggerUI();
+                if (targetTab === 'playground') updatePlaygroundJSON();
+            });
+        });
+
+        // Event Listeners on LudoJS Game
+        game.on('roll', (data) => {
+            logMiniEvent(`🎲 ${data.player} rolled <strong>${data.roll}</strong>`);
+            document.getElementById('lblDiceVal').textContent = data.roll;
+            document.getElementById('lblGameState').textContent = game.state;
+        });
+
+        game.on('move', (data) => {
+            logMiniEvent(`♟️ ${data.player} moved pawn #${data.pawnId}`);
+            if (data.captured) {
+                logMiniEvent(`💥 ${data.player} captured ${data.captured.color}!`);
+            }
+        });
+
+        game.on('turnChange', (data) => {
+            updateUI();
+            checkCpuTurn();
+        });
+
+        game.on('win', (data) => {
+            logMiniEvent(`🏆 WINNER: ${data.winner}!`);
+            alert(`Player ${data.winner} has won the game!`);
+        });
+
+        function logMiniEvent(msg) {
+            const container = document.getElementById('miniEventLog');
+            const div = document.createElement('div');
+            div.innerHTML = msg;
+            container.prepend(div);
+        }
+
+        // Canvas Board Renderer
+        const canvas = document.getElementById('ludoCanvas');
+        const ctx = canvas.getContext('2d');
+        const ts = canvas.width / 15;
+
+        function renderBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Bases
+            drawBase(0, 9 * ts, COLOR_HEX.RED, LIGHT_HEX.RED);
+            drawBase(0, 0, COLOR_HEX.GREEN, LIGHT_HEX.GREEN);
+            drawBase(9 * ts, 0, COLOR_HEX.YELLOW, LIGHT_HEX.YELLOW);
+            drawBase(9 * ts, 9 * ts, COLOR_HEX.BLUE, LIGHT_HEX.BLUE);
+
+            // Draw Paths & Center
+            drawHomeStretches();
+            drawCenter();
+            drawPawns();
+            drawHighlights();
+        }
+
+        function drawBase(x, y, main, light) {
+            ctx.fillStyle = main;
+            ctx.fillRect(x, y, 6 * ts, 6 * ts);
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(x + ts, y + ts, 4 * ts, 4 * ts);
+
+            const centers = [
+                [x + 1.5 * ts, y + 1.5 * ts], [x + 4.5 * ts, y + 1.5 * ts],
+                [x + 1.5 * ts, y + 4.5 * ts], [x + 4.5 * ts, y + 4.5 * ts]
+            ];
+            centers.forEach(([cx, cy]) => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, ts * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = light;
+                ctx.fill();
+            });
+        }
+
+        function drawHomeStretches() {
+            const colMap = [
+                { path: game.board.homePaths.RED, color: COLOR_HEX.RED, start: [6, 13] },
+                { path: game.board.homePaths.GREEN, color: COLOR_HEX.GREEN, start: [1, 6] },
+                { path: game.board.homePaths.YELLOW, color: COLOR_HEX.YELLOW, start: [8, 1] },
+                { path: game.board.homePaths.BLUE, color: COLOR_HEX.BLUE, start: [13, 8] }
+            ];
+            colMap.forEach(({ path, color, start }) => {
+                ctx.fillStyle = color;
+                ctx.fillRect(start[0] * ts, start[1] * ts, ts, ts);
+                path.forEach(([cx, cy]) => {
+                    ctx.fillRect(cx * ts, cy * ts, ts, ts);
+                });
+            });
+        }
+
+        function drawCenter() {
+            const cx = 7.5 * ts, cy = 7.5 * ts;
+            const triangles = [
+                { color: COLOR_HEX.RED, pts: [[cx, cy], [6 * ts, 9 * ts], [9 * ts, 9 * ts]] },
+                { color: COLOR_HEX.GREEN, pts: [[cx, cy], [6 * ts, 6 * ts], [6 * ts, 9 * ts]] },
+                { color: COLOR_HEX.YELLOW, pts: [[cx, cy], [6 * ts, 6 * ts], [9 * ts, 6 * ts]] },
+                { color: COLOR_HEX.BLUE, pts: [[cx, cy], [9 * ts, 6 * ts], [9 * ts, 9 * ts]] }
+            ];
+            triangles.forEach(t => {
+                ctx.beginPath();
+                ctx.moveTo(t.pts[0][0], t.pts[0][1]);
+                ctx.lineTo(t.pts[1][0], t.pts[1][1]);
+                ctx.lineTo(t.pts[2][0], t.pts[2][1]);
+                ctx.fillStyle = t.color;
+                ctx.fill();
+            });
+        }
+
+        function drawPawns() {
+            Object.values(game.players).forEach(player => {
+                player.pawns.forEach(pawn => {
+                    const coord = game.board.getPawnCoordinates(pawn);
+                    const x = coord.x * ts + ts / 2;
+                    const y = coord.y * ts + ts / 2;
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, ts * 0.38, 0, Math.PI * 2);
+                    ctx.fillStyle = COLOR_HEX[pawn.color];
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+                });
+            });
+        }
+
+        function drawHighlights() {
+            if (game.state !== 'MOVING') return;
+            selectedMovablePawns.forEach(pawn => {
+                const coord = game.board.getPawnCoordinates(pawn);
+                const x = coord.x * ts + ts / 2;
+                const y = coord.y * ts + ts / 2;
+
+                ctx.beginPath();
+                ctx.arc(x, y, ts * 0.48, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fde047';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            });
+        }
+
+        // Canvas Click Interaction
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const gx = Math.floor(clickX / ts);
+            const gy = Math.floor(clickY / ts);
+
+            const clickedPawn = selectedMovablePawns.find(p => {
+                const coord = game.board.getPawnCoordinates(p);
+                return Math.floor(coord.x) === gx && Math.floor(coord.y) === gy;
+            });
+
+            if (clickedPawn) {
+                game.movePawn(clickedPawn, game.dice.value);
+                selectedMovablePawns = [];
+                updateUI();
+            }
+        });
+
+        // UI Controls & State Binding
+        document.getElementById('btnRollDice').addEventListener('click', () => {
+            if (game.state !== 'WAITING') return;
+            const roll = game.rollDice();
+            selectedMovablePawns = game.getMovablePawns(roll);
+            
+            if (selectedMovablePawns.length === 0) {
+                setTimeout(() => game.nextTurn(), 1000);
+            } else if (game.getCurrentPlayer().type === 'CPU') {
+                const best = game.ai.selectBestMove(selectedMovablePawns, roll);
+                setTimeout(() => {
+                    game.movePawn(best, roll);
+                    selectedMovablePawns = [];
+                    updateUI();
+                }, 800);
+            }
+            updateUI();
+        });
+
+        function updateUI() {
+            const player = game.getCurrentPlayer();
+            document.getElementById('lblCurrentTurn').textContent = `${player.color} (${player.type})`;
+            document.getElementById('turnColorDot').style.backgroundColor = COLOR_HEX[player.color];
+            document.getElementById('lblGameState').textContent = game.state;
+
+            const list = document.getElementById('playersStatusList');
+            list.innerHTML = '';
+            Object.values(game.players).forEach(pl => {
+                const finishedCount = pl.pawns.filter(p => p.isHome()).length;
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-gray-900/60 p-2.5 rounded-xl border border-gray-800 text-xs';
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${COLOR_HEX[pl.color]}"></div>
+                        <span class="font-bold text-white">${pl.color}</span>
+                    </div>
+                    <span class="text-gray-400">Home: <strong class="text-white">${finishedCount}/4</strong></span>
+                `;
+                list.appendChild(item);
+            });
+
+            renderBoard();
+        }
+
+        function checkCpuTurn() {
+            if (game.getCurrentPlayer().type === 'CPU' && game.state === 'WAITING') {
+                setTimeout(() => {
+                    document.getElementById('btnRollDice').click();
+                }, 800);
+            }
+        }
+
+        // Playground Console Helpers
+        function logConsole(msg) {
+            const out = document.getElementById('consoleOutput');
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            out.appendChild(div);
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('consoleOutput.innerHTML = "');
+        }
+
+        function playgroundRoll() {
+            const r = game.rollDice();
+            logConsole(`game.rollDice() -> ${r}`);
+            updatePlaygroundJSON();
+        }
+
+        function playgroundNextTurn() {
+            game.nextTurn();
+            logConsole(`game.nextTurn() -> current is ${game.getCurrentPlayer().color}`);
+            updatePlaygroundJSON();
+        }
+
+        function playgroundAddPlayer() {
+            logConsole(`Player registry already initialized with 4 players.`);
+        }
+
+        function playgroundRigDice(val) {
+            game.dice.rig(val);
+            logConsole(`dice.rig(${val}) configured successfully for next roll.`);
+        }
+
+        function runCustomCode() {
+            const code = document.getElementById('txtCustomCode').value;
+            try {
+                logConsole(`Executing custom snippet...`);
+                const result = eval(code);
+                if (result !== undefined) logConsole(`Result: ${JSON.stringify(result)}`);
+            } catch (err) {
+                logConsole(`Error: ${err.message}`);
+            }
+        }
+
+        function updatePlaygroundJSON() {
+            const jsonView = document.getElementById('jsonStateOutput');
+            if (jsonView) {
+                jsonView.textContent = JSON.stringify({
+                    turn: game.getCurrentPlayer().color,
+                    state: game.state,
+                    diceValue: game.dice.value,
+                    players: game.players
+                }, null, 2);
+            }
+        }
+
+        function exportStateJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(game, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "ludojs_state.json");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        // Debugger Time-Travel Helpers
+        function updateDebuggerUI() {
+            const slider = document.getElementById('timelineSlider');
+            slider.max = game.historySnapshots.length - 1;
+            slider.value = game.historySnapshots.length - 1;
+            document.getElementById('lblSnapshotIndex').textContent = `${slider.value} / ${slider.max}`;
+            
+            const viewer = document.getElementById('snapshotJsonViewer');
+            if (game.historySnapshots.length > 0) {
+                viewer.textContent = JSON.stringify(JSON.parse(game.historySnapshots[game.historySnapshots.length - 1]), null, 2);
+            }
+        }
+
+        function onTimelineScrub(val) {
+            game.restoreSnapshot(parseInt(val));
+            document.getElementById('lblSnapshotIndex').textContent = `${val} / ${game.historySnapshots.length - 1}`;
+            const viewer = document.getElementById('snapshotJsonViewer');
+            viewer.textContent = JSON.stringify(JSON.parse(game.historySnapshots[val]), null, 2);
+            updateUI();
+        }
+
+        function debuggerUndo() {
+            const slider = document.getElementById('timelineSlider');
+            if (slider.value > 0) {
+                slider.value--;
+                onTimelineScrub(slider.value);
+            }
+        }
+
+        function debuggerRedo() {
+            const slider = document.getElementById('timelineSlider');
+            if (slider.value < game.historySnapshots.length - 1) {
+                slider.value++;
+                onTimelineScrub(slider.value);
+            }
+        }
+
+        // Global Reset
+        document.getElementById('btnGlobalReset').addEventListener('click', () => {
+            game = new LudoGame();
+            updateUI();
+            logMiniEvent('Engine globally reset.');
+        });
+
+        // Initialize on load
+        window.onload = () =>
+        {
+            updateUI();
+        };
+    </script>
+</body>
+</html>
